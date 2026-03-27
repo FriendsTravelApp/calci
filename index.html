@@ -3,224 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voice Calc Pro</title>
+    <title>Voice Calc Master Pro</title>
     <style>
-        :root {
-            --primary: #d4af37; /* Gold */
-            --secondary: #50c878; /* Emerald */
-            --glass: rgba(255, 255, 255, 0.95);
-        }
+        :root { --gold: #d4af37; --emerald: #50c878; --glass: rgba(255, 255, 255, 0.98); }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; display: flex; justify-content: center; padding: 15px; margin: 0; }
+        .card { width: 100%; max-width: 450px; background: var(--glass); border-radius: 30px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); border: 1px solid #fff; }
+        h2 { text-align: center; color: var(--emerald); margin: 0 0 15px 0; text-transform: uppercase; font-size: 1.4rem; letter-spacing: 1px; }
+        
+        .display-container { background: #fff; border-radius: 20px; padding: 25px; margin-bottom: 20px; border-bottom: 6px solid var(--gold); box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); }
+        #status { font-size: 0.85rem; color: #d4af37; margin-bottom: 8px; font-weight: bold; min-height: 1.2rem; text-transform: uppercase; }
+        #math-input { width: 100%; border: none; font-size: 3.2rem; font-weight: bold; text-align: right; color: #2c3e50; outline: none; background: transparent; font-family: 'Courier New', monospace; }
+        
+        .top-controls { display: flex; gap: 12px; margin-bottom: 20px; }
+        .btn-sm { flex: 1; padding: 16px; border-radius: 18px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 0.9rem; transition: 0.2s; text-transform: uppercase; }
+        .bg-orange { background: #ff9f43; box-shadow: 0 4px 0 #cc7d35; }
+        .bg-red { background: #ff4757; box-shadow: 0 4px 0 #c0392b; }
+        .btn-sm:active { transform: translateY(2px); box-shadow: none; }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f0f4f8;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .app-card {
-            width: 100%;
-            max-width: 400px;
-            background: var(--glass);
-            border-radius: 30px;
-            padding: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.5);
-        }
-
-        h2 { text-align: center; color: var(--secondary); margin-bottom: 20px; }
-
-        .display {
-            background: #fff;
-            border-radius: 20px;
-            padding: 20px;
-            min-height: 120px;
-            margin-bottom: 25px;
-            text-align: right;
-            border-bottom: 6px solid var(--primary);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-        }
-
-        #input-text { font-size: 1rem; color: #7f8c8d; min-height: 1.5rem; }
-        #result-text { font-size: 2.2rem; font-weight: bold; word-wrap: break-word; }
-
-        .btn-mic {
-            width: 100%;
-            padding: 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 50px;
-            background: var(--secondary);
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(80, 200, 120, 0.3);
-        }
-
-        .btn-mic.listening {
-            background: #ff4757;
-            animation: pulse 1.5s infinite;
-        }
-
-        .history-box {
-            margin-top: 25px;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            background: #fff;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
+        .wave-container { display: flex; align-items: center; justify-content: center; gap: 5px; height: 35px; margin-bottom: 20px; }
+        .bar { width: 6px; height: 10px; background: var(--emerald); border-radius: 3px; transition: 0.1s; }
+        
+        #micBtn { width: 100%; padding: 24px; font-size: 1.3rem; font-weight: bold; border: none; border-radius: 60px; cursor: pointer; transition: 0.3s; color: white; background: var(--emerald); box-shadow: 0 6px 20px rgba(80, 200, 120, 0.4); text-transform: uppercase; }
+        #micBtn.active { background: #ff4757; animation: pulse 1.5s infinite; box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4); }
+        
+        .history-box { margin-top: 25px; border-top: 2px solid #eee; padding-top: 20px; }
+        .history-list { max-height: 350px; overflow-y: auto; }
+        .h-item { display: flex; align-items: center; background: #fff; margin-bottom: 12px; border-radius: 18px; border-left: 6px solid var(--gold); padding: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+        .h-content { flex: 1; cursor: pointer; color: #333; font-size: 1.1rem; }
+        .h-content strong { color: var(--emerald); font-size: 1.3rem; }
+        .del-btn { background: #ffeded; color: #ff4757; border: none; border-radius: 12px; padding: 12px 18px; cursor: pointer; font-weight: bold; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-<div class="app-card">
-    <h2>Voice Calculator</h2>
-    
-    <div class="display">
-        <div id="input-text">Waiting for Voice...</div>
-        <div id="result-text">0</div>
+<div class="card">
+    <h2>Voice Calc Master</h2>
+    <div class="display-container">
+        <div id="status">Ready...</div>
+        <input type="text" id="math-input" value="" placeholder="0">
     </div>
 
-    <button id="micBtn" class="btn-mic">Start Voice Command</button>
-    
-    <div class="history-box" id="history">
-        <strong>History</strong>
+    <div class="top-controls">
+        <button class="btn-sm bg-orange" onclick="clearInput()">Clear Screen</button>
+        <button class="btn-sm bg-red" onclick="clearAllHistory()">Remove All</button>
+    </div>
+
+    <div class="wave-container" id="wave">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar image_f31d9c.png"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+
+    <button id="micBtn">Start Voice</button>
+
+    <div class="history-box">
+        <strong>History (Tap to Edit)</strong>
+        <div id="historyList" class="history-list"></div>
     </div>
 </div>
 
 <script>
     const micBtn = document.getElementById('micBtn');
-    const inputText = document.getElementById('input-text');
-    const resultText = document.getElementById('result-text');
-    const historyBox = document.getElementById('history');
+    const mathInput = document.getElementById('math-input');
+    const status = document.getElementById('status');
+    const historyList = document.getElementById('historyList');
+    const bars = document.querySelectorAll('.bar');
 
-    let currentInput = "";
     let isListening = false;
+    let isShowingResult = false;
     let db;
 
-    // --- IndexedDB ---
-    const request = indexedDB.open("VoiceCalcDB", 2);
-    request.onupgradeneeded = (e) => {
-        db = e.target.result;
-        if(!db.objectStoreNames.contains("logs")) db.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
-    };
-    request.onsuccess = (e) => { db = e.target.result; loadHistory(); };
+    // 1. IndexedDB Setup
+    const request = indexedDB.open("FinalCalcDB_V3", 1);
+    request.onupgradeneeded = (e) => e.target.result.createObjectStore("history", { keyPath: "id", autoIncrement: true });
+    request.onsuccess = (e) => { db = e.target.result; renderHistory(); };
 
-    // --- Speech Setup ---
+    // 2. Speech Engine
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
-    micBtn.addEventListener('click', () => {
+    micBtn.onclick = () => {
         if (!isListening) {
-            isListening = true;
             recognition.start();
+            micBtn.textContent = "Stop (Listening...)";
+            micBtn.classList.add('active');
+            isListening = true;
+            status.textContent = "Listening...";
         } else {
-            isListening = false;
             recognition.stop();
-        }
-    });
-
-    recognition.onstart = () => {
-        micBtn.classList.add('listening');
-        micBtn.textContent = "Listening... (Tap to Stop)";
-        inputText.textContent = "Say '5 plus 10' then 'Answer'";
-    };
-
-    recognition.onend = () => {
-        if (isListening) recognition.start(); // Auto-restart loop
-        else {
-            micBtn.classList.remove('listening');
-            micBtn.textContent = "Start Voice Command";
+            micBtn.textContent = "Start Voice";
+            micBtn.classList.remove('active');
+            isListening = false;
         }
     };
 
     recognition.onresult = (event) => {
-        const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-        processVoice(transcript);
+        let transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+        animateWave();
+        
+        // CORRECTED: Only remove a dot if it is at the very END of the sentence (pause dot)
+        // If it is 27.64, the dot is NOT at the end, so it stays safe.
+        if (transcript.endsWith(".")) {
+            transcript = transcript.slice(0, -1);
+        }
+
+        if (transcript.includes("remove all") || transcript.includes("delete all")) {
+            clearAllHistory();
+            return;
+        }
+        if (transcript.includes("equal") || transcript.includes("answer")) {
+            calculate();
+            return;
+        }
+        if (transcript.includes("clear") || transcript.includes("next")) {
+            clearInput();
+            return;
+        }
+
+        if (isShowingResult && !transcript.match(/plus|minus|times|divided|into/)) {
+            mathInput.value = "";
+        }
+        isShowingResult = false;
+
+        let math = transcript.replace(/plus/g, '+').replace(/minus/g, '-').replace(/times|multiplied|into/g, '*')
+                             .replace(/divided/g, '/').replace(/zero/g, '0').replace(/point|dot/g, '.');
+
+        // Allow numbers, operators, AND internal dots
+        let cleanResult = math.replace(/[^0-9+\-*/.]/g, '');
+
+        if (cleanResult === "") return;
+
+        mathInput.value += cleanResult;
+        status.textContent = "Heard: " + cleanResult;
     };
 
-    function processVoice(cmd) {
-        console.log("Heard:", cmd);
-        inputText.textContent = "Heard: " + cmd;
-
-        if (cmd.includes("answer") || cmd.includes("equal")) {
-            calculate();
-        } else if (cmd.includes("remove") || cmd.includes("delete")) {
-            // Logic to remove the last segment
-            let parts = currentInput.split(/([\+\-\*\/])/);
-            parts.pop();
-            currentInput = parts.join("");
-            updateUI();
-        } else if (cmd.includes("clear")) {
-            currentInput = "";
-            updateUI();
-        } else {
-            // Clean and add numbers
-            let math = cmd.replace(/plus/g, '+').replace(/minus/g, '-').replace(/times|multiplied by|x/g, '*').replace(/divided by/g, '/').replace(/ /g, '');
-            let clean = math.replace(/[^0-9+\-*/.]/g, '');
-            currentInput += clean;
-            updateUI();
-        }
-    }
-
-    function updateUI() { resultText.textContent = currentInput || "0"; }
-
     function calculate() {
-        if (!currentInput) return;
+        if (!mathInput.value) return;
         try {
-            const result = eval(currentInput);
-            const entry = `${currentInput} = ${result}`;
+            let expr = mathInput.value.replace(/[+\-*/.]$/, ""); 
+            const result = eval(expr);
+            const fixed = Number.isInteger(result) ? result : parseFloat(result.toFixed(2));
             
-            // Speak result
-            const synth = window.speechSynthesis;
-            synth.speak(new SpeechSynthesisUtterance(result));
+            speak(fixed);
 
-            // Save to DB
-            const tx = db.transaction("logs", "readwrite");
-            tx.objectStore("logs").add({ text: entry, time: new Date().toLocaleTimeString() });
-            tx.oncomplete = () => loadHistory();
+            const tx = db.transaction("history", "readwrite");
+            tx.objectStore("history").add({ expr: expr, res: fixed });
+            tx.oncomplete = renderHistory;
 
-            currentInput = result.toString();
-            updateUI();
-        } catch (e) { inputText.textContent = "Error in calculation"; }
+            mathInput.value = fixed;
+            isShowingResult = true;
+            status.textContent = "Done!";
+        } catch (e) { status.textContent = "Math Error!"; }
     }
 
-    function loadHistory() {
-        const tx = db.transaction("logs", "readonly");
-        const store = tx.objectStore("logs");
-        store.getAll().onsuccess = (e) => {
-            historyBox.innerHTML = "<strong>History</strong>";
-            e.target.result.slice(-5).reverse().forEach(item => {
+    function renderHistory() {
+        const tx = db.transaction("history", "readonly");
+        tx.objectStore("history").getAll().onsuccess = (e) => {
+            historyList.innerHTML = "";
+            e.target.result.slice(-15).reverse().forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'history-item';
-                div.innerHTML = `<span>${item.text}</span> <small>${item.time}</small>`;
-                historyBox.appendChild(div);
+                div.className = 'h-item';
+                div.innerHTML = `
+                    <div class="h-content" onclick="editNow('${item.expr}')">
+                        ${item.expr} = <strong>${item.res}</strong>
+                    </div>
+                    <button class="del-btn" onclick="deleteEntry(${item.id})">X</button>`;
+                historyList.appendChild(div);
             });
         };
     }
+
+    window.editNow = (val) => {
+        mathInput.value = val;
+        isShowingResult = false;
+        mathInput.focus();
+    };
+
+    window.deleteEntry = (id) => {
+        const tx = db.transaction("history", "readwrite");
+        tx.objectStore("history").delete(id);
+        tx.oncomplete = renderHistory;
+    };
+
+    window.clearAllHistory = () => {
+        if (confirm("Delete all history?")) {
+            const tx = db.transaction("history", "readwrite");
+            tx.objectStore("history").clear();
+            tx.oncomplete = renderHistory;
+            status.textContent = "History Cleared";
+        }
+    };
+
+    function clearInput() { mathInput.value = ""; isShowingResult = false; status.textContent = "Cleared"; }
+    
+    function speak(t) { 
+        const utterance = new SpeechSynthesisUtterance(t);
+        window.speechSynthesis.speak(utterance); 
+    }
+
+    function animateWave() {
+        bars.forEach(b => b.style.height = (Math.random() * 25 + 5) + "px");
+        setTimeout(() => bars.forEach(b => b.style.height = "10px"), 400);
+    }
+
+    recognition.onend = () => { if (isListening) recognition.start(); };
 </script>
 </body>
 </html>
