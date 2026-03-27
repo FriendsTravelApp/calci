@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voice Calc Pro</title>
+    <style>
+        :root {
+            --primary: #d4af37; /* Gold */
+            --secondary: #50c878; /* Emerald */
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f4f8;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--glass);
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        h2 { text-align: center; color: var(--secondary); margin-bottom: 20px; }
+
+        .display {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 120px;
+            margin-bottom: 25px;
+            text-align: right;
+            border-bottom: 6px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        #input-text { font-size: 1rem; color: #7f8c8d; min-height: 1.5rem; }
+        #result-text { font-size: 2.2rem; font-weight: bold; word-wrap: break-word; }
+
+        .btn-mic {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            background: var(--secondary);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(80, 200, 120, 0.3);
+        }
+
+        .btn-mic.listening {
+            background: #ff4757;
+            animation: pulse 1.5s infinite;
+        }
+
+        .history-box {
+            margin-top: 25px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: #fff;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <h2>Voice Calculator</h2>
+    
+    <div class="display">
+        <div id="input-text">Waiting for Voice...</div>
+        <div id="result-text">0</div>
+    </div>
+
+    <button id="micBtn" class="btn-mic">Start Voice Command</button>
+    
+    <div class="history-box" id="history">
+        <strong>History</strong>
+    </div>
+</div>
+
+<script>
+    const micBtn = document.getElementById('micBtn');
+    const inputText = document.getElementById('input-text');
+    const resultText = document.getElementById('result-text');
+    const historyBox = document.getElementById('history');
+
+    let currentInput = "";
+    let isListening = false;
+    let db;
+
+    // --- IndexedDB ---
+    const request = indexedDB.open("VoiceCalcDB", 2);
+    request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if(!db.objectStoreNames.contains("logs")) db.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
+    };
+    request.onsuccess = (e) => { db = e.target.result; loadHistory(); };
+
+    // --- Speech Setup ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    micBtn.addEventListener('click', () => {
+        if (!isListening) {
+            isListening = true;
+            recognition.start();
+        } else {
+            isListening = false;
+            recognition.stop();
+        }
+    });
+
+    recognition.onstart = () => {
+        micBtn.classList.add('listening');
+        micBtn.textContent = "Listening... (Tap to Stop)";
+        inputText.textContent = "Say '5 plus 10' then 'Answer'";
+    };
+
+    recognition.onend = () => {
+        if (isListening) recognition.start(); // Auto-restart loop
+        else {
+            micBtn.classList.remove('listening');
+            micBtn.textContent = "Start Voice Command";
+        }
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+        processVoice(transcript);
+    };
+
+    function processVoice(cmd) {
+        console.log("Heard:", cmd);
+        inputText.textContent = "Heard: " + cmd;
+
+        if (cmd.includes("answer") || cmd.includes("equal")) {
+            calculate();
+        } else if (cmd.includes("remove") || cmd.includes("delete")) {
+            // Logic to remove the last segment
+            let parts = currentInput.split(/([\+\-\*\/])/);
+            parts.pop();
+            currentInput = parts.join("");
+            updateUI();
+        } else if (cmd.includes("clear")) {
+            currentInput = "";
+            updateUI();
+        } else {
+            // Clean and add numbers
+            let math = cmd.replace(/plus/g, '+').replace(/minus/g, '-').replace(/times|multiplied by|x/g, '*').replace(/divided by/g, '/').replace(/ /g, '');
+            let clean = math.replace(/[^0-9+\-*/.]/g, '');
+            currentInput += clean;
+            updateUI();
+        }
+    }
+
+    function updateUI() { resultText.textContent = currentInput || "0"; }
+
+    function calculate() {
+        if (!currentInput) return;
+        try {
+            const result = eval(currentInput);
+            const entry = `${currentInput} = ${result}`;
+            
+            // Speak result
+            const synth = window.speechSynthesis;
+            synth.speak(new SpeechSynthesisUtterance(result));
+
+            // Save to DB
+            const tx = db.transaction("logs", "readwrite");
+            tx.objectStore("logs").add({ text: entry, time: new Date().toLocaleTimeString() });
+            tx.oncomplete = () => loadHistory();
+
+            currentInput = result.toString();
+            updateUI();
+        } catch (e) { inputText.textContent = "Error in calculation"; }
+    }
+
+    function loadHistory() {
+        const tx = db.transaction("logs", "readonly");
+        const store = tx.objectStore("logs");
+        store.getAll().onsuccess = (e) => {
+            historyBox.innerHTML = "<strong>History</strong>";
+            e.target.result.slice(-5).reverse().forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<span>${item.text}</span> <small>${item.time}</small>`;
+                historyBox.appendChild(div);
+            });
+        };
+    }
+</script>
+</body>
+</html>
